@@ -1,4 +1,4 @@
-name: GHA test
+name: GHA test 2
 
 on:
   workflow_dispatch:
