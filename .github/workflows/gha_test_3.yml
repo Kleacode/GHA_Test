@@ -1,0 +1,85 @@
+name: GHA test 3
+
+on:
+  workflow_dispatch:
+    inputs:
+      exec_build_job1:
+        type: boolean
+      exec_build_job2:
+        type: boolean
+      force_fail_build_job1:
+        type: boolean
+      force_fail_build_job2:
+        type: boolean
+      force_fail_2ndjob:
+        type: boolean
+      force_fail_3rdjob:
+        type: boolean
+
+jobs:
+  show_inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "exec_build_job1: ${{inputs.exec_build_job1}}"
+          echo "exec_build_job2: ${{inputs.exec_build_job2}}"
+          echo "force_fail_build_job1: ${{inputs.force_fail_build_job1}}"
+          echo "force_fail_build_job2: ${{inputs.force_fail_build_job2}}"
+          echo "force_fail_2ndjob: ${{inputs.force_fail_2ndjob}}"
+          echo "force_fail_3rdjob: ${{inputs.force_fail_3rdjob}}"
+
+  build_job1:
+    if: ${{inputs.exec_build_job1}}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ ${{ inputs.force_fail_build_job1 }} == true ]; then
+            exit 1
+          else
+            echo "build_job1"
+          fi
+  build_job2:
+    if: ${{inputs.exec_build_job2}}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ ${{ inputs.force_fail_build_job2 }} == true ]; then
+            exit 1
+          else
+            echo "build_job2"
+          fi
+
+  second_job:
+    needs: [build_job1, build_job2]
+    if: >-
+      ${{ ! contains(needs.*.result, 'failure') &&
+          ! contains(needs.*.result, 'cancelled') }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ ${{ inputs.force_fail_2ndjob }} == true ]; then
+            exit 1
+          else
+            echo "build_job1: ${{needs.build_job1.result}}"
+            echo "build_job2: ${{needs.build_job2.result}}"
+          fi
+
+  third_job:
+    needs: [second_job]
+    if: ${{ needs.second_job.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ ${{ inputs.force_fail_3rdjob }} == true ]; then
+            exit 1
+          else
+            echo "second_job: ${{needs.second_job.result}}"
+          fi
+
+  fourth_job:
+    needs: [third_job]
+    if: ${{ needs.third_job.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "third_job: ${{needs.third_job.result}}"
