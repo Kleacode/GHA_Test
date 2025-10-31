@@ -67,7 +67,7 @@ jobs:
 
   third_job:
     needs: [second_job]
-    if: ${{ always() && needs.second_job.result == 'success' }}
+    if: ${{ needs.second_job.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - run: |
@@ -79,7 +79,7 @@ jobs:
 
   fourth_job:
     needs: [third_job]
-    if: ${{ always() && needs.third_job.result == 'success' }}
+    if: ${{ needs.third_job.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - run: |
