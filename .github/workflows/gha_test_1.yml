@@ -1,0 +1,56 @@
+name: GHA test
+
+on:
+  workflow_dispatch:
+    inputs:
+      exec_job1:
+        type: boolean
+      exec_job2:
+        type: boolean
+      force_fail_job2:
+        type: boolean
+
+jobs:
+  build_job1:
+    if: ${{inputs.exec_job1}}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "build_job1"
+  build_job2:
+    if: ${{inputs.exec_job2}}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ ${{ inputs.force_fail_job2 }} == true ]; then
+            exit 1
+          else
+            echo "build_job2"
+          fi
+
+  second_job:
+    needs: [build_job1, build_job2]
+    if: >-
+      ${{ always() &&
+          ! contains(needs.*.result, 'failure') &&
+          ! contains(needs.*.result, 'cancelled') }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "build_job1: ${{needs.build_job1.result}}"
+          echo "build_job2: ${{needs.build_job2.result}}"
+
+  third_job:
+    needs: [second_job]
+    if: ${{ always() && needs.second_job.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "second_job: ${{needs.second_job.result}}"
+
+  fourth_job:
+    needs: [third_job]
+    if: ${{always() && needs.third_job.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "third_job: ${{needs.third_job.result}}"
